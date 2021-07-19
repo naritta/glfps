@@ -4,10 +4,12 @@ out vec4 FragColor;
 uniform vec2 resolution;
 uniform vec4 bullet;
 uniform vec4 target;
+uniform vec3 camera;
 
 float sphereSize = bullet.w;
 vec3 spherePosition = vec3(bullet.x,bullet.y,bullet.z);
 vec3 targetPosition = vec3(target.x,target.y,target.z);
+vec3 cameraPosition = vec3(camera.x,camera.y,camera.z);
 
 float dist_func(vec3 position, float size) {
     return length(position) - size;
@@ -24,8 +26,7 @@ vec3 normal(vec3 pos, float size) {
 
 void main(void) {
     vec2 pixelPosition2d = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-    vec3 cameraPosition = vec3(0.0, 0.0, 10.0);
-    float screenZ = 4.0;
+    float screenZ = 0.0;
     vec3 pixelPosition = vec3(pixelPosition2d, screenZ);
     
     vec3 lightDirection = normalize(vec3(0.0, 0.0, 1.0));

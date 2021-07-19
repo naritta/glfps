@@ -88,11 +88,15 @@ int main()
     };
     
     float bullet_position[] = {
-        0.0f, 0.0f, 0.0f, 0.6f
+        0.0f, 0.0f, 5.0f, 0.6f
     };
     
     float target_position[] = {
-        0.5f, 0.0f, -10.0f, 0.6f
+        0.5f, 0.0f, 0.0f, 0.6f
+    };
+    
+    float camera_position[] = {
+        0.0f, 0.0f, 10.0f
     };
     
     unsigned int positions_VBO, colors_VBO, VAO;
@@ -158,7 +162,7 @@ int main()
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         
-        processInput(deltaTime, bullet_position);
+        processInput(deltaTime, camera_position);
         
         bullet_position[2] -= deltaTime*speed;
         
@@ -167,6 +171,7 @@ int main()
         glUniform2f(glGetUniformLocation(shaderID, "resolution"), SCR_WIDTH, SCR_WIDTH);
         glUniform4f(glGetUniformLocation(shaderID, "bullet"), bullet_position[0], bullet_position[1], bullet_position[2], bullet_position[3]);
         glUniform4f(glGetUniformLocation(shaderID, "target"), target_position[0], target_position[1], target_position[2], target_position[3]);
+        glUniform3f(glGetUniformLocation(shaderID, "camera"), camera_position[0], camera_position[1], camera_position[2]);
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
