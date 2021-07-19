@@ -16,10 +16,15 @@ using namespace glm;
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void checkCollision(float bullet_position[], float target_position[]);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void processInput(float dt, float bullet_position[]);
 
 // settings
-const unsigned int SCR_WIDTH = 600;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 500;
+const unsigned int SCR_HEIGHT = 500;
+
+bool keys[1024];
+bool keysProcessed[1024];
 
 using namespace std;
 
@@ -46,6 +51,7 @@ int main()
         return -1;
     }
     glfwMakeContextCurrent(window);
+    glfwSetKeyCallback(window, key_callback);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     
     // Initialize GLEW
@@ -152,6 +158,8 @@ int main()
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         
+        processInput(deltaTime, bullet_position);
+        
         bullet_position[2] -= deltaTime*speed;
         
         checkCollision(bullet_position, target_position);
@@ -178,12 +186,42 @@ int main()
     return 0;
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+    if (key >= 0 && key < 1024)
+    {
+        if (action == GLFW_PRESS){
+            keys[key] = true;
+        } else if (action == GLFW_RELEASE) {
+            keys[key] = false;
+            keysProcessed[key] = false;
+        }
+    }
+}
+
 void checkCollision(float bullet_position[], float target_position[]){
     float d = pow(bullet_position[0]-target_position[0], 2.0) + pow(bullet_position[1]-target_position[1], 2.0) + pow(bullet_position[2]-target_position[2], 2.0);
     if (d < pow((bullet_position[3]+target_position[3]), 2.0)) {
         // delete by moving for the time being
         target_position[1] = 10;
     };
+}
+
+void processInput(float dt, float bullet_position[])
+{
+    float basicVel = 2.0;
+    float velocity = basicVel * dt;
+    if (keys[GLFW_KEY_RIGHT]) {
+        bullet_position[0] += velocity;
+    } else if (keys[GLFW_KEY_LEFT]) {
+        bullet_position[0] -= velocity;
+    } else if (keys[GLFW_KEY_UP]) {
+        bullet_position[1] += velocity;
+    } else if (keys[GLFW_KEY_DOWN]) {
+        bullet_position[1] -= velocity;
+    }
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
