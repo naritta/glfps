@@ -226,6 +226,10 @@ void processInput(float dt, float bullet_position[])
         bullet_position[1] += velocity;
     } else if (keys[GLFW_KEY_DOWN]) {
         bullet_position[1] -= velocity;
+    } else if (keys[GLFW_KEY_A]) {
+        bullet_position[0] = 0;
+        bullet_position[1] = 0;
+        bullet_position[2] = 5.0;
     }
 }
 
