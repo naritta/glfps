@@ -17,7 +17,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void checkCollision(float bullet_position[], float target_position[]);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
-void processInput(float dt, float bullet_position[]);
+void processInput(float dt, float camera_position[], float bullet_position[]);
 
 // settings
 const unsigned int SCR_WIDTH = 500;
@@ -162,7 +162,7 @@ int main()
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         
-        processInput(deltaTime, camera_position);
+        processInput(deltaTime, camera_position, bullet_position);
         
         bullet_position[2] -= deltaTime*speed;
         
@@ -214,18 +214,18 @@ void checkCollision(float bullet_position[], float target_position[]){
     };
 }
 
-void processInput(float dt, float bullet_position[])
+void processInput(float dt, float camera_position[], float bullet_position[])
 {
     float basicVel = 2.0;
     float velocity = basicVel * dt;
     if (keys[GLFW_KEY_RIGHT]) {
-        bullet_position[0] += velocity;
+        camera_position[0] += velocity;
     } else if (keys[GLFW_KEY_LEFT]) {
-        bullet_position[0] -= velocity;
+        camera_position[0] -= velocity;
     } else if (keys[GLFW_KEY_UP]) {
-        bullet_position[1] += velocity;
+        camera_position[1] += velocity;
     } else if (keys[GLFW_KEY_DOWN]) {
-        bullet_position[1] -= velocity;
+        camera_position[1] -= velocity;
     } else if (keys[GLFW_KEY_A]) {
         bullet_position[0] = 0;
         bullet_position[1] = 0;
