@@ -88,15 +88,15 @@ int main()
     
     // build and compile shaders
     // -------------------------
-    Shader shaderGeometryPass("8.2.g_buffer.vs", "8.2.g_buffer.fs");
-    Shader shaderLightingPass("8.2.deferred_shading.vs", "8.2.deferred_shading.fs");
-    Shader shaderLightBox("8.2.deferred_light_box.vs", "8.2.deferred_light_box.fs");
+    Shader shaderGeometryPass("/Users/ritta/glfps/game/game/shader/g_buffer.vs", "/Users/ritta/glfps/game/game/shader/g_buffer.fs");
+    Shader shaderLightingPass("/Users/ritta/glfps/game/game/shader/deferred_shading.vs", "/Users/ritta/glfps/game/game/shader/deferred_shading.fs");
+//    Shader shaderLightBox("/Users/ritta/Desktop/shader/game/game/shader/deferred_light_box.vs", "/Users/ritta/Desktop/shader/game/game/shader/deferred_light_box.fs");
     
     // load models
     // -----------
 //    Model backpack("resources/objects/backpack/backpack.obj");
-//    std::vector<glm::vec3> objectPositions;
-//    objectPositions.push_back(glm::vec3(-3.0, -0.5, -3.0));
+    std::vector<glm::vec3> objectPositions;
+    objectPositions.push_back(glm::vec3(-3.0, -0.5, -3.0));
 //    objectPositions.push_back(glm::vec3( 0.0, -0.5, -3.0));
 //    objectPositions.push_back(glm::vec3( 3.0, -0.5, -3.0));
 //    objectPositions.push_back(glm::vec3(-3.0, -0.5,  0.0));
@@ -168,6 +168,17 @@ int main()
         lightColors.push_back(glm::vec3(rColor, gColor, bColor));
     }
     
+    static const GLfloat g_vertex_buffer_data[] = {
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        0.0f,  1.0f, 0.0f,
+    };
+    
+    GLuint vertexbuffer;
+    glGenBuffers(1, &vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+    
     // shader configuration
     // --------------------
     shaderLightingPass.use();
@@ -204,14 +215,36 @@ int main()
         shaderGeometryPass.use();
         shaderGeometryPass.setMat4("projection", projection);
         shaderGeometryPass.setMat4("view", view);
-//        for (unsigned int i = 0; i < objectPositions.size(); i++)
-//        {
-//            model = glm::mat4(1.0f);
-//            model = glm::translate(model, objectPositions[i]);
-//            model = glm::scale(model, glm::vec3(0.25f));
-//            shaderGeometryPass.setMat4("model", model);
+        for (unsigned int i = 0; i < objectPositions.size(); i++)
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, objectPositions[i]);
+            model = glm::scale(model, glm::vec3(0.25f));
+            shaderGeometryPass.setMat4("model", model);
+            renderCube();
 //            backpack.Draw(shaderGeometryPass);
-//        }
+            // 1rst attribute buffer : vertices
+//            glClear( GL_COLOR_BUFFER_BIT );
+//
+//            glEnableVertexAttribArray(0);
+//            glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+//            glVertexAttribPointer(
+//                                  0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+//                                  3,                  // size
+//                                  GL_FLOAT,           // type
+//                                  GL_FALSE,           // normalized?
+//                                  0,                  // stride
+//                                  (void*)0            // array buffer offset
+//                                  );
+//
+//            // Draw the triangle !
+//            glDrawArrays(GL_TRIANGLES, 0, 3); // 3 indices starting at 0 -> 1 triangle
+        }
+        
+//        model = glm::mat4(1.0f);
+//        shaderGeometryPass.setMat4("model", model);
+//        glDrawArrays(GL_TRIANGLES, 0, 3);
+        
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         
         // 2. lighting pass: calculate lighting by iterating over a screen filled quad pixel-by-pixel using the gbuffer's content.
@@ -244,30 +277,30 @@ int main()
         // finally render quad
         renderQuad();
         
-        // 2.5. copy content of geometry's depth buffer to default framebuffer's depth buffer
-        // ----------------------------------------------------------------------------------
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
-        // blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
-        // the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the
-        // depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
-        glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//        // 2.5. copy content of geometry's depth buffer to default framebuffer's depth buffer
+//        // ----------------------------------------------------------------------------------
+//        glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+//        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
+//        // blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
+//        // the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the
+//        // depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
+//        glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         
-        // 3. render lights on top of scene
-        // --------------------------------
-        shaderLightBox.use();
-        shaderLightBox.setMat4("projection", projection);
-        shaderLightBox.setMat4("view", view);
-        for (unsigned int i = 0; i < lightPositions.size(); i++)
-        {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, lightPositions[i]);
-            model = glm::scale(model, glm::vec3(0.125f));
-            shaderLightBox.setMat4("model", model);
-            shaderLightBox.setVec3("lightColor", lightColors[i]);
-            renderCube();
-        }
+//        // 3. render lights on top of scene
+//        // --------------------------------
+//        shaderLightBox.use();
+//        shaderLightBox.setMat4("projection", projection);
+//        shaderLightBox.setMat4("view", view);
+//        for (unsigned int i = 0; i < lightPositions.size(); i++)
+//        {
+//            model = glm::mat4(1.0f);
+//            model = glm::translate(model, lightPositions[i]);
+//            model = glm::scale(model, glm::vec3(0.125f));
+//            shaderLightBox.setMat4("model", model);
+//            shaderLightBox.setVec3("lightColor", lightColors[i]);
+//            renderCube();
+//        }
         
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
