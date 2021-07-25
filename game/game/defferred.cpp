@@ -17,10 +17,18 @@ void processInput(GLFWwindow *window);
 unsigned int loadTexture(const char *path, bool gammaCorrection);
 void renderQuad();
 void renderCube();
+void renderRaymarch();
+void processInput(GLFWwindow *window);
+//void checkCollision(float bullet_position[], float target_position[]);
+//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void processInput(float dt, float camera_position[], float bullet_position[]);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+bool keys[1024];
+bool keysProcessed[1024];
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
@@ -90,21 +98,22 @@ int main()
     // -------------------------
     Shader shaderGeometryPass("/Users/ritta/glfps/game/game/shader/g_buffer.vs", "/Users/ritta/glfps/game/game/shader/g_buffer.fs");
     Shader shaderLightingPass("/Users/ritta/glfps/game/game/shader/deferred_shading.vs", "/Users/ritta/glfps/game/game/shader/deferred_shading.fs");
-//    Shader shaderLightBox("/Users/ritta/Desktop/shader/game/game/shader/deferred_light_box.vs", "/Users/ritta/Desktop/shader/game/game/shader/deferred_light_box.fs");
+    Shader shaderRaymarch("/Users/ritta/glfps/game/game/shader/board.vert", "/Users/ritta/glfps/game/game/shader/raymarch.frag");
+    Shader shaderLightBox("/Users/ritta/glfps/game/game/shader/deferred_object.vs", "/Users/ritta/glfps/game/game/shader/deferred_object.fs");
     
     // load models
     // -----------
 //    Model backpack("resources/objects/backpack/backpack.obj");
     std::vector<glm::vec3> objectPositions;
     objectPositions.push_back(glm::vec3(-3.0, -0.5, -3.0));
-//    objectPositions.push_back(glm::vec3( 0.0, -0.5, -3.0));
-//    objectPositions.push_back(glm::vec3( 3.0, -0.5, -3.0));
-//    objectPositions.push_back(glm::vec3(-3.0, -0.5,  0.0));
-//    objectPositions.push_back(glm::vec3( 0.0, -0.5,  0.0));
-//    objectPositions.push_back(glm::vec3( 3.0, -0.5,  0.0));
-//    objectPositions.push_back(glm::vec3(-3.0, -0.5,  3.0));
-//    objectPositions.push_back(glm::vec3( 0.0, -0.5,  3.0));
-//    objectPositions.push_back(glm::vec3( 3.0, -0.5,  3.0));
+    objectPositions.push_back(glm::vec3( 0.0, -0.5, -3.0));
+    objectPositions.push_back(glm::vec3( 3.0, -0.5, -3.0));
+    objectPositions.push_back(glm::vec3(-3.0, -0.5,  0.0));
+    objectPositions.push_back(glm::vec3( 0.0, -0.5,  0.0));
+    objectPositions.push_back(glm::vec3( 3.0, -0.5,  0.0));
+    objectPositions.push_back(glm::vec3(-3.0, -0.5,  3.0));
+    objectPositions.push_back(glm::vec3( 0.0, -0.5,  3.0));
+    objectPositions.push_back(glm::vec3( 3.0, -0.5,  3.0));
     
     
     // configure g-buffer framebuffer
@@ -185,6 +194,18 @@ int main()
     shaderLightingPass.setInt("gPosition", 0);
     shaderLightingPass.setInt("gNormal", 1);
     shaderLightingPass.setInt("gAlbedoSpec", 2);
+    
+    float bullet_position[] = {
+        0.0f, 0.0f, 5.0f, 0.6f
+    };
+    
+    float target_position[] = {
+        0.5f, 0.0f, 0.0f, 0.6f
+    };
+    
+    float camera_position[] = {
+        0.0f, 0.0f, 10.0f
+    };
     
     // render loop
     // -----------
@@ -279,29 +300,44 @@ int main()
         
 //        // 2.5. copy content of geometry's depth buffer to default framebuffer's depth buffer
 //        // ----------------------------------------------------------------------------------
-//        glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
-//        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
-//        // blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
-//        // the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the
-//        // depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
-//        glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
+        // blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
+        // the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the
+        // depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
+        glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         
 //        // 3. render lights on top of scene
 //        // --------------------------------
-//        shaderLightBox.use();
-//        shaderLightBox.setMat4("projection", projection);
-//        shaderLightBox.setMat4("view", view);
-//        for (unsigned int i = 0; i < lightPositions.size(); i++)
-//        {
-//            model = glm::mat4(1.0f);
-//            model = glm::translate(model, lightPositions[i]);
-//            model = glm::scale(model, glm::vec3(0.125f));
-//            shaderLightBox.setMat4("model", model);
-//            shaderLightBox.setVec3("lightColor", lightColors[i]);
-//            renderCube();
-//        }
+        shaderLightBox.use();
+        shaderLightBox.setMat4("projection", projection);
+        shaderLightBox.setMat4("view", view);
+        for (unsigned int i = 0; i < lightPositions.size(); i++)
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, lightPositions[i]);
+            model = glm::scale(model, glm::vec3(0.125f));
+            shaderLightBox.setMat4("model", model);
+            shaderLightBox.setVec3("lightColor", lightColors[i]);
+            renderCube();
+        }
         
+//        processInput(deltaTime, camera_position, bullet_position);
+//
+////        glUseProgram(shaderID);
+//        shaderRaymarch.use();
+//        bullet_position[2] -= deltaTime*0.5;
+//
+////        checkCollision(bullet_position, target_position);
+//
+//        glUniform2f(glGetUniformLocation(shaderRaymarch.ID, "resolution"), SCR_WIDTH, SCR_WIDTH);
+//        glUniform4f(glGetUniformLocation(shaderRaymarch.ID, "bullet"), bullet_position[0], bullet_position[1], bullet_position[2], bullet_position[3]);
+//        glUniform4f(glGetUniformLocation(shaderRaymarch.ID, "target"), target_position[0], target_position[1], target_position[2], target_position[3]);
+//        glUniform3f(glGetUniformLocation(shaderRaymarch.ID, "camera"), camera_position[0], camera_position[1], camera_position[2]);
+//        renderRaymarch();
+//        glBindVertexArray(VAO);
+//        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -420,25 +456,57 @@ void renderQuad()
     glBindVertexArray(0);
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
+unsigned int raymarchVAO = 0;
+unsigned int raymarchVBO;
+void renderRaymarch()
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, true);
-    
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    camera.ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    camera.ProcessKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    camera.ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    camera.ProcessKeyboard(RIGHT, deltaTime);
+    if (raymarchVAO == 0)
+    {
+        float positions_vertices[] = {
+            // positions
+            -1.0f, -1.0f, 0.0f,
+            1.0f, -1.0f, 0.0f,
+            -1.0f,  1.0f, 0.0f,
+            1.0f,  1.0f, 0.0f,
+        };
+        
+        glGenVertexArrays(1, &raymarchVAO);
+        glBindVertexArray(raymarchVAO);
+        
+        glGenBuffers(1, &raymarchVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, raymarchVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(positions_vertices), positions_vertices, GL_STREAM_DRAW);
+        
+        // position attribute
+        glBindBuffer(GL_ARRAY_BUFFER, raymarchVBO);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    }
+    glBindVertexArray(raymarchVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+//void processInput(GLFWwindow *window)
+//{
+//    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+//    glfwSetWindowShouldClose(window, true);
+//    
+//    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+//    camera.ProcessKeyboard(FORWARD, deltaTime);
+//    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+//    camera.ProcessKeyboard(BACKWARD, deltaTime);
+//    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+//    camera.ProcessKeyboard(LEFT, deltaTime);
+//    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+//    camera.ProcessKeyboard(RIGHT, deltaTime);
+//}
+//
+//// glfw: whenever the window size changed (by OS or user resize) this callback function executes
+//// ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     // make sure the viewport matches the new window dimensions; note that width and
@@ -471,4 +539,31 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(yoffset);
+}
+
+void processInput(float dt, float camera_position[], float bullet_position[])
+{
+    float basicVel = 2.0;
+    float velocity = basicVel * dt;
+    if (keys[GLFW_KEY_RIGHT]) {
+        camera_position[0] += velocity;
+    } else if (keys[GLFW_KEY_LEFT]) {
+        camera_position[0] -= velocity;
+    } else if (keys[GLFW_KEY_UP]) {
+        camera_position[1] += velocity;
+    } else if (keys[GLFW_KEY_DOWN]) {
+        camera_position[1] -= velocity;
+    } else if (keys[GLFW_KEY_A]) {
+        bullet_position[0] = 0;
+        bullet_position[1] = 0;
+        bullet_position[2] = 5.0;
+    }
+}
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    glfwSetWindowShouldClose(window, true);
 }
