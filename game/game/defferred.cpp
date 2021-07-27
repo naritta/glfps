@@ -98,7 +98,7 @@ int main()
     // -------------------------
     Shader shaderGeometryPass("/Users/ritta/glfps/game/game/shader/g_buffer.vs", "/Users/ritta/glfps/game/game/shader/g_buffer.fs");
     Shader shaderLightingPass("/Users/ritta/glfps/game/game/shader/deferred_shading.vs", "/Users/ritta/glfps/game/game/shader/deferred_shading.fs");
-    Shader shaderRaymarch("/Users/ritta/glfps/game/game/shader/board.vert", "/Users/ritta/glfps/game/game/shader/raymarch.frag");
+    Shader shaderRaymarch("/Users/ritta/glfps/game/game/shader/board.vert", "/Users/ritta/glfps/game/game/shader/metaball.frag");
     Shader shaderLightBox("/Users/ritta/glfps/game/game/shader/deferred_object.vs", "/Users/ritta/glfps/game/game/shader/deferred_object.fs");
     
     // load models
@@ -196,15 +196,15 @@ int main()
     shaderLightingPass.setInt("gAlbedoSpec", 2);
     
     float bullet_position[] = {
-        0.0f, 0.0f, 5.0f, 0.6f
+        0.0f, 0.0f, 1.0f, 0.6f
     };
     
     float target_position[] = {
-        0.5f, 0.0f, 0.0f, 0.6f
+        0.0f, 0.0f, 1.0f, 0.6f
     };
     
     float camera_position[] = {
-        0.0f, 0.0f, 10.0f
+        0.0f, 0.0f, 2.0f
     };
     
     // render loop
@@ -236,31 +236,30 @@ int main()
         shaderGeometryPass.use();
         shaderGeometryPass.setMat4("projection", projection);
         shaderGeometryPass.setMat4("view", view);
+        
+        glUniform2f(glGetUniformLocation(shaderGeometryPass.ID, "resolution"), SCR_WIDTH, SCR_WIDTH);
+        glUniform4f(glGetUniformLocation(shaderGeometryPass.ID, "bullet"), bullet_position[0], bullet_position[1], bullet_position[2], bullet_position[3]);
+        glUniform4f(glGetUniformLocation(shaderGeometryPass.ID, "target"), target_position[0], target_position[1], target_position[2], target_position[3]);
+        glUniform3f(glGetUniformLocation(shaderGeometryPass.ID, "camera"), camera_position[0], camera_position[1], camera_position[2]);
+        
         for (unsigned int i = 0; i < objectPositions.size(); i++)
         {
             model = glm::mat4(1.0f);
             model = glm::translate(model, objectPositions[i]);
             model = glm::scale(model, glm::vec3(0.25f));
             shaderGeometryPass.setMat4("model", model);
+            shaderGeometryPass.setInt("isRaymarch", 0);
             renderCube();
-//            backpack.Draw(shaderGeometryPass);
-            // 1rst attribute buffer : vertices
-//            glClear( GL_COLOR_BUFFER_BIT );
-//
-//            glEnableVertexAttribArray(0);
-//            glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-//            glVertexAttribPointer(
-//                                  0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-//                                  3,                  // size
-//                                  GL_FLOAT,           // type
-//                                  GL_FALSE,           // normalized?
-//                                  0,                  // stride
-//                                  (void*)0            // array buffer offset
-//                                  );
-//
-//            // Draw the triangle !
-//            glDrawArrays(GL_TRIANGLES, 0, 3); // 3 indices starting at 0 -> 1 triangle
         }
+        
+        // render raymarch
+        model = glm::mat4(1.0f);
+//        model = glm::translate(model, objectPositions[i]);
+//        model = glm::scale(model, glm::vec3(0.25f));
+        shaderGeometryPass.setMat4("model", model);
+        shaderGeometryPass.setInt("isRaymarch", 1);
+        renderRaymarch();
+        
         
 //        model = glm::mat4(1.0f);
 //        shaderGeometryPass.setMat4("model", model);
@@ -295,40 +294,50 @@ int main()
             shaderLightingPass.setFloat("lights[" + std::to_string(i) + "].Radius", radius);
         }
         shaderLightingPass.setVec3("viewPos", camera.Position);
+        glUniform2f(glGetUniformLocation(shaderLightingPass.ID, "resolution"), SCR_WIDTH, SCR_WIDTH);
+//        glUniform4f(glGetUniformLocation(shaderLightingPass.ID, "bullet"), bullet_position[0], bullet_position[1], bullet_position[2], bullet_position[3]);
+//        glUniform4f(glGetUniformLocation(shaderLightingPass.ID, "target"), target_position[0], target_position[1], target_position[2], target_position[3]);
+//        glUniform3f(glGetUniformLocation(shaderLightingPass.ID, "camera"), camera_position[0], camera_position[1], camera_position[2]);
         // finally render quad
         renderQuad();
         
 //        // 2.5. copy content of geometry's depth buffer to default framebuffer's depth buffer
 //        // ----------------------------------------------------------------------------------
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
-        // blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
-        // the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the
-        // depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
-        glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//        glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+//        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
+//        // blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
+//        // the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the
+//        // depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
+//        glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+//        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         
 //        // 3. render lights on top of scene
 //        // --------------------------------
-        shaderLightBox.use();
-        shaderLightBox.setMat4("projection", projection);
-        shaderLightBox.setMat4("view", view);
-        for (unsigned int i = 0; i < lightPositions.size(); i++)
-        {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, lightPositions[i]);
-            model = glm::scale(model, glm::vec3(0.125f));
-            shaderLightBox.setMat4("model", model);
-            shaderLightBox.setVec3("lightColor", lightColors[i]);
-            renderCube();
-        }
+//        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+//        glClear(GL_DEPTH_BUFFER_BIT | GL_FRAMEBUFFER);
+//        shaderRaymarch.use();
+//        shaderRaymarch.setMat4("projection", projection);
+//        shaderRaymarch.setMat4("view", view);
+//        for (unsigned int i = 0; i < lightPositions.size(); i++)
+//        {
+//            model = glm::mat4(1.0f);
+//            model = glm::translate(model, glm::vec3(0.0f));
+//            model = glm::scale(model, glm::vec3(2.0f));
+////            shaderLightBox.setMat4("model", model);
+////            shaderLightBox.setVec3("lightColor", lightColors[i]);
+//            shaderRaymarch.setMat4("model", model);
+//            shaderRaymarch.setVec3("lightColor", lightColors[i]);
+//            glUniform2f(glGetUniformLocation(shaderRaymarch.ID, "resolution"), SCR_WIDTH, SCR_WIDTH);
+////            renderCube();
+//            renderRaymarch();
+//        }
         
 //        processInput(deltaTime, camera_position, bullet_position);
 //
 ////        glUseProgram(shaderID);
 //        shaderRaymarch.use();
+//        glUniform2f(glGetUniformLocation(shaderRaymarch.ID, "resolution"), SCR_WIDTH, SCR_WIDTH);
 //        bullet_position[2] -= deltaTime*0.5;
-//
 ////        checkCollision(bullet_position, target_position);
 //
 //        glUniform2f(glGetUniformLocation(shaderRaymarch.ID, "resolution"), SCR_WIDTH, SCR_WIDTH);

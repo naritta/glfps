@@ -11,14 +11,27 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform int isRaymarch;
+
 void main()
 {
-    vec4 worldPos = model * vec4(aPos, 1.0);
-    FragPos = worldPos.xyz;
-    TexCoords = aTexCoords;
-    
-    mat3 normalMatrix = transpose(inverse(mat3(model)));
-    Normal = normalMatrix * aNormal;
-    
-    gl_Position = projection * view * worldPos;
+    if (isRaymarch==0) {
+        vec4 worldPos = model * vec4(aPos, 1.0);
+        FragPos = worldPos.xyz;
+        TexCoords = aTexCoords;
+        
+        mat3 normalMatrix = transpose(inverse(mat3(model)));
+        Normal = normalMatrix * aNormal;
+        
+        gl_Position = projection * view * worldPos;
+    } else {
+        vec4 worldPos = model * vec4(aPos, 1.0);
+        FragPos = worldPos.xyz;
+        TexCoords = aTexCoords;
+        
+        mat3 normalMatrix = transpose(inverse(mat3(model)));
+        Normal = normalMatrix * aNormal;
+        
+        gl_Position = projection * view * worldPos;
+    }
 }
