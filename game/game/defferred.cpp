@@ -105,12 +105,12 @@ int main()
     // -----------
 //    Model backpack("resources/objects/backpack/backpack.obj");
     std::vector<glm::vec3> objectPositions;
-    objectPositions.push_back(glm::vec3(-3.0, -0.5, -3.0));
-    objectPositions.push_back(glm::vec3( 0.0, -0.5, -3.0));
-    objectPositions.push_back(glm::vec3( 3.0, -0.5, -3.0));
-    objectPositions.push_back(glm::vec3(-3.0, -0.5,  0.0));
-    objectPositions.push_back(glm::vec3( 0.0, -0.5,  0.0));
-    objectPositions.push_back(glm::vec3( 3.0, -0.5,  0.0));
+    objectPositions.push_back(glm::vec3(-3.0, -0.5, 0.0));
+    objectPositions.push_back(glm::vec3( 0.0, -0.5, 0.0));
+    objectPositions.push_back(glm::vec3( 3.0, -0.5, 0.0));
+    objectPositions.push_back(glm::vec3(-3.0, -0.5,  1.0));
+    objectPositions.push_back(glm::vec3( 0.0, -0.5,  1.0));
+    objectPositions.push_back(glm::vec3( 3.0, -0.5,  1.0));
     objectPositions.push_back(glm::vec3(-3.0, -0.5,  3.0));
     objectPositions.push_back(glm::vec3( 0.0, -0.5,  3.0));
     objectPositions.push_back(glm::vec3( 3.0, -0.5,  3.0));
@@ -196,15 +196,15 @@ int main()
     shaderLightingPass.setInt("gAlbedoSpec", 2);
     
     float bullet_position[] = {
-        0.0f, 0.0f, 1.0f, 0.6f
+        0.0f, 0.0f, 2.0f, 0.6f
     };
     
     float target_position[] = {
-        0.0f, 0.0f, 1.0f, 0.6f
+        0.0f, 0.0f, 2.0f, 0.6f
     };
     
     float camera_position[] = {
-        0.0f, 0.0f, 2.0f
+        0.0f, 0.0f, 3.0f
     };
     
     // render loop
@@ -473,10 +473,10 @@ void renderRaymarch()
     {
         float positions_vertices[] = {
             // positions
-            -1.0f, -1.0f, 0.0f,
-            1.0f, -1.0f, 0.0f,
-            -1.0f,  1.0f, 0.0f,
-            1.0f,  1.0f, 0.0f,
+            -1.0f, -1.0f, 1.0f,
+            1.0f, -1.0f, 1.0f,
+            -1.0f,  1.0f, 1.0f,
+            1.0f,  1.0f, 1.0f,
         };
         
         glGenVertexArrays(1, &raymarchVAO);

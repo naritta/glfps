@@ -6,6 +6,7 @@ layout (location = 2) out vec4 gAlbedoSpec;
 in vec3 FragPos;
 in vec2 TexCoords;
 in vec3 Normal;
+in vec4 Pos;
 
 uniform vec4 bullet;
 uniform vec4 target;
@@ -88,17 +89,23 @@ void main()
         gAlbedoSpec.rgb = vec3(1.0);
         // store specular intensity in gAlbedoSpec's alpha component
         gAlbedoSpec.a = 1.0;
+        float far=gl_DepthRange.far;
+        float near=gl_DepthRange.near;
+        float depth = (((far-near) * FragPos.z) + near + far) / 2.0;
+        gl_FragDepth = Pos.z/10;
     } else {
         if (hit()) {
             gPosition = cameraPosition;
             gNormal = norm;
             gAlbedoSpec.rgb = vec3(1.0, 0.0, 0.0);
             gAlbedoSpec.a = 1.0;
+            gl_FragDepth = 0.3f;
         } else {
             gPosition = vec3(0.0, 0.0, 1000.0);
             gNormal = vec3(0.0, 0.0, -1.0);
             gAlbedoSpec.rgb = vec3(0.0);
             gAlbedoSpec.a = 0.0;
+            gl_FragDepth = 1.0f;
         }
     }
 }
