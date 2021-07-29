@@ -27,14 +27,16 @@ void main()
         gl_Position = projection * view * worldPos;
         Pos = gl_Position;
     } else {
-        vec4 worldPos = model * vec4(aPos.x, aPos.y, 0.0, 1.0);
+        vec4 worldPos = model * vec4(aPos, 1.0);
         FragPos = worldPos.xyz;
         TexCoords = aTexCoords;
         
         mat3 normalMatrix = transpose(inverse(mat3(model)));
         Normal = normalMatrix * aNormal;
         
-        gl_Position = projection * view * worldPos;
-        Pos = gl_Position;
+        gl_Position = vec4(aPos, 1.0);
+//        gl_Position = worldPos;
+//        gl_Position = projection * view * worldPos;
+        Pos = projection * view * worldPos;
     }
 }

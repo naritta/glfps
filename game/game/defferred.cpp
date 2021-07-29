@@ -31,7 +31,7 @@ bool keys[1024];
 bool keysProcessed[1024];
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 0.0f));
 float lastX = (float)SCR_WIDTH / 2.0;
 float lastY = (float)SCR_HEIGHT / 2.0;
 bool firstMouse = true;
@@ -39,6 +39,12 @@ bool firstMouse = true;
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+float bullet_position[] = {
+    0.0f, 0.0f, -5.0f, 0.6f
+};
+
+glm::vec3 bulletPos = glm::vec3(0.0, 0.0, -2.0);
 
 int main()
 {
@@ -105,15 +111,15 @@ int main()
     // -----------
 //    Model backpack("resources/objects/backpack/backpack.obj");
     std::vector<glm::vec3> objectPositions;
-    objectPositions.push_back(glm::vec3(-3.0, -0.5, 0.0));
-    objectPositions.push_back(glm::vec3( 0.0, -0.5, 0.0));
-    objectPositions.push_back(glm::vec3( 3.0, -0.5, 0.0));
-    objectPositions.push_back(glm::vec3(-3.0, -0.5,  1.0));
-    objectPositions.push_back(glm::vec3( 0.0, -0.5,  1.0));
-    objectPositions.push_back(glm::vec3( 3.0, -0.5,  1.0));
-    objectPositions.push_back(glm::vec3(-3.0, -0.5,  3.0));
-    objectPositions.push_back(glm::vec3( 0.0, -0.5,  3.0));
-    objectPositions.push_back(glm::vec3( 3.0, -0.5,  3.0));
+    objectPositions.push_back(glm::vec3(-3.0, -0.5, -6.0));
+    objectPositions.push_back(glm::vec3( 0.0, -0.5, -6.0));
+    objectPositions.push_back(glm::vec3( 3.0, -0.5, -6.0));
+    objectPositions.push_back(glm::vec3(-3.0, -0.5,  0.0));
+    objectPositions.push_back(glm::vec3( 0.0, -0.5,  0.0));
+    objectPositions.push_back(glm::vec3( 3.0, -0.5,  0.0));
+    objectPositions.push_back(glm::vec3(-3.0, -0.5,  -3.0));
+    objectPositions.push_back(glm::vec3( 0.0, -0.5,  -3.0));
+    objectPositions.push_back(glm::vec3( 3.0, -0.5,  -3.0));
     
     
     // configure g-buffer framebuffer
@@ -195,17 +201,14 @@ int main()
     shaderLightingPass.setInt("gNormal", 1);
     shaderLightingPass.setInt("gAlbedoSpec", 2);
     
-    float bullet_position[] = {
-        0.0f, 0.0f, 2.0f, 0.6f
-    };
     
     float target_position[] = {
         0.0f, 0.0f, 2.0f, 0.6f
     };
     
-    float camera_position[] = {
-        0.0f, 0.0f, 3.0f
-    };
+//    float camera_position[] = {
+//        0.0f, 0.0f, 3.0f
+//    };
     
     // render loop
     // -----------
@@ -216,6 +219,8 @@ int main()
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        
+//        bulletPos[2] -= deltaTime*2;
         
         // input
         // -----
@@ -236,11 +241,12 @@ int main()
         shaderGeometryPass.use();
         shaderGeometryPass.setMat4("projection", projection);
         shaderGeometryPass.setMat4("view", view);
+        shaderGeometryPass.setVec3("cameraPos", camera.GetPosition());
+        shaderGeometryPass.setVec3("bulletPos", bulletPos);
         
         glUniform2f(glGetUniformLocation(shaderGeometryPass.ID, "resolution"), SCR_WIDTH, SCR_WIDTH);
-        glUniform4f(glGetUniformLocation(shaderGeometryPass.ID, "bullet"), bullet_position[0], bullet_position[1], bullet_position[2], bullet_position[3]);
+//        glUniform4f(glGetUniformLocation(shaderGeometryPass.ID, "bullet"), bullet_position[0], bullet_position[1], bullet_position[2], bullet_position[3]);
         glUniform4f(glGetUniformLocation(shaderGeometryPass.ID, "target"), target_position[0], target_position[1], target_position[2], target_position[3]);
-        glUniform3f(glGetUniformLocation(shaderGeometryPass.ID, "camera"), camera_position[0], camera_position[1], camera_position[2]);
         
         for (unsigned int i = 0; i < objectPositions.size(); i++)
         {
@@ -254,9 +260,26 @@ int main()
         
         // render raymarch
         model = glm::mat4(1.0f);
-//        model = glm::translate(model, objectPositions[i]);
-//        model = glm::scale(model, glm::vec3(0.25f));
+        glm::mat4 uni = glm::mat4(1.0f);
+        glm::vec3 pollyPos = camera.GetPosition();
+        pollyPos[2] -= 1.0f;
+        model = glm::translate(model, pollyPos);
+        // degree: pitch->Y, yaw->X
+//        std::cout << camera.GetYaw() << std::endl;
+//        std::cout << camera.GetPitch() << std::endl;
+        glm::mat4 rot = glm::rotate(
+                model,
+                glm::radians(camera.GetYaw()+90.0f),
+                glm::vec3(0.0f, -1.0f, 0.0f)
+                );
+//        model = glm::rotate(
+//                 model,
+//                 camera.GetYaw(),
+//                 glm::vec3(0.0f, 1.0f, 0.0f)
+//             );
+        model = glm::scale(model, glm::vec3(1.0f));
         shaderGeometryPass.setMat4("model", model);
+        shaderGeometryPass.setMat4("rot", rot);
         shaderGeometryPass.setInt("isRaymarch", 1);
         renderRaymarch();
         
@@ -473,10 +496,14 @@ void renderRaymarch()
     {
         float positions_vertices[] = {
             // positions
-            -1.0f, -1.0f, 1.0f,
-            1.0f, -1.0f, 1.0f,
-            -1.0f,  1.0f, 1.0f,
-            1.0f,  1.0f, 1.0f,
+//            -0.5f, -0.5f, -1.0f,
+//            0.5f, -0.5f, -1.0f,
+//            -0.5f,  0.5f, -1.0f,
+//            0.5f,  0.5f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
         };
         
         glGenVertexArrays(1, &raymarchVAO);
@@ -499,20 +526,23 @@ void renderRaymarch()
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-//void processInput(GLFWwindow *window)
-//{
-//    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-//    glfwSetWindowShouldClose(window, true);
-//    
-//    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-//    camera.ProcessKeyboard(FORWARD, deltaTime);
-//    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-//    camera.ProcessKeyboard(BACKWARD, deltaTime);
-//    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-//    camera.ProcessKeyboard(LEFT, deltaTime);
-//    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-//    camera.ProcessKeyboard(RIGHT, deltaTime);
-//}
+void processInput(GLFWwindow *window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    glfwSetWindowShouldClose(window, true);
+    
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    camera.ProcessKeyboard(FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    camera.ProcessKeyboard(BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    camera.ProcessKeyboard(LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    camera.ProcessKeyboard(RIGHT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        bulletPos = camera.GetPosition();
+    }
+}
 //
 //// glfw: whenever the window size changed (by OS or user resize) this callback function executes
 //// ---------------------------------------------------------------------------------------------
@@ -550,29 +580,29 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     camera.ProcessMouseScroll(yoffset);
 }
 
-void processInput(float dt, float camera_position[], float bullet_position[])
-{
-    float basicVel = 2.0;
-    float velocity = basicVel * dt;
-    if (keys[GLFW_KEY_RIGHT]) {
-        camera_position[0] += velocity;
-    } else if (keys[GLFW_KEY_LEFT]) {
-        camera_position[0] -= velocity;
-    } else if (keys[GLFW_KEY_UP]) {
-        camera_position[1] += velocity;
-    } else if (keys[GLFW_KEY_DOWN]) {
-        camera_position[1] -= velocity;
-    } else if (keys[GLFW_KEY_A]) {
-        bullet_position[0] = 0;
-        bullet_position[1] = 0;
-        bullet_position[2] = 5.0;
-    }
-}
+//void processInput(float dt, float camera_position[], float bullet_position[])
+//{
+//    float basicVel = 2.0;
+//    float velocity = basicVel * dt;
+//    if (keys[GLFW_KEY_RIGHT]) {
+//        camera_position[0] += velocity;
+//    } else if (keys[GLFW_KEY_LEFT]) {
+//        camera_position[0] -= velocity;
+//    } else if (keys[GLFW_KEY_UP]) {
+//        camera_position[1] += velocity;
+//    } else if (keys[GLFW_KEY_DOWN]) {
+//        camera_position[1] -= velocity;
+//    } else if (keys[GLFW_KEY_A]) {
+//        bullet_position[0] = 0;
+//        bullet_position[1] = 0;
+//        bullet_position[2] = 5.0;
+//    }
+//}
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, true);
-}
+//void processInput(GLFWwindow *window)
+//{
+//    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+//    glfwSetWindowShouldClose(window, true);
+//}
