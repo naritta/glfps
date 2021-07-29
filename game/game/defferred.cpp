@@ -19,7 +19,7 @@ void renderQuad();
 void renderCube();
 void renderRaymarch();
 void processInput(GLFWwindow *window);
-//void checkCollision(float bullet_position[], float target_position[]);
+bool checkCollision(glm::vec3 bulletPos, glm::vec3 targetPos);
 //void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void processInput(float dt, float camera_position[], float bullet_position[]);
 
@@ -45,6 +45,14 @@ float bullet_position[] = {
 };
 
 glm::vec3 bulletPos = glm::vec3(0.0, 0.0, -2.0);
+glm::vec3 targetPos = glm::vec3(1.0, 0.0, -2.0);
+
+bool targetCrashed = false;
+
+float bulletSize = 0.5;
+float targetSize = 0.5;
+
+glm::vec3 front = camera.GetFront();
 
 int main()
 {
@@ -220,7 +228,16 @@ int main()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         
-//        bulletPos[2] -= deltaTime*2;
+        bulletPos[0] += deltaTime*0.1*front[0];
+        bulletPos[1] += deltaTime*0.1*front[1];
+        bulletPos[2] += deltaTime*0.1*front[2];
+//        bulletPos[2] -= deltaTime*0.1;
+        
+        if (!targetCrashed) {
+            if (checkCollision(bulletPos, targetPos)) {
+                targetCrashed = true;
+            }
+        }
         
         // input
         // -----
@@ -242,6 +259,7 @@ int main()
         shaderGeometryPass.setMat4("projection", projection);
         shaderGeometryPass.setMat4("view", view);
         shaderGeometryPass.setVec3("cameraPos", camera.GetPosition());
+        shaderGeometryPass.setVec3("targetPos", targetPos);
         shaderGeometryPass.setVec3("bulletPos", bulletPos);
         
         glUniform2f(glGetUniformLocation(shaderGeometryPass.ID, "resolution"), SCR_WIDTH, SCR_WIDTH);
@@ -281,6 +299,7 @@ int main()
         shaderGeometryPass.setMat4("model", model);
         shaderGeometryPass.setMat4("rot", rot);
         shaderGeometryPass.setInt("isRaymarch", 1);
+        shaderGeometryPass.setBool("targetCrashed", targetCrashed);
         renderRaymarch();
         
         
@@ -523,6 +542,13 @@ void renderRaymarch()
     glBindVertexArray(0);
 }
 
+bool checkCollision(glm::vec3 bulletPos, glm::vec3 targetPos){
+    float d = pow(bulletPos[0]-targetPos[0], 2.0) + pow(bulletPos[1]-targetPos[1], 2.0) + pow(bulletPos[2]-targetPos[2], 2.0);
+    if (d < pow((bulletSize+targetSize), 2.0))
+        return true;
+    else
+        return false;
+}
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
@@ -541,6 +567,9 @@ void processInput(GLFWwindow *window)
     camera.ProcessKeyboard(RIGHT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
         bulletPos = camera.GetPosition();
+        bulletPos[2] = -2.0;
+        front = camera.GetFront();
+//        bulletPos = glm::vec3(0.0, 0.0, -2.0);
     }
 }
 //

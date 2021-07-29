@@ -10,8 +10,10 @@ in vec4 Pos;
 
 uniform vec3 bulletPos;
 uniform vec3 cameraPos;
+uniform vec3 targetPos;
 uniform vec4 bullet;
 uniform vec4 target;
+uniform bool targetCrashed;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -24,7 +26,7 @@ uniform int isRaymarch;
 
 float sphereSize = 0.5;
 vec3 spherePosition = bulletPos;
-vec3 targetPosition = vec3(target.x,target.y,target.z);
+vec3 targetPosition = targetPos;
 //vec3 cameraPosition = vec3(camera.x,camera.y,camera.z);
 vec3 cameraPosition = cameraPos;
 
@@ -61,28 +63,31 @@ bool hit(){
         vec3 cameraToSphere = cameraPosition-spherePosition;
         float bulletDist = dist_func(cameraToSphere, sphereSize);
         
-//        vec3 cameraToTarget = cameraPosition-targetPosition;
-//        float targetDist = dist_func(cameraToTarget, sphereSize);
+        vec3 cameraToTarget = cameraPosition-targetPosition;
+        float targetDist = dist_func(cameraToTarget, sphereSize);
         
+//        float dist = bulletDist;
         float dist = bulletDist;
-//        float dist = min(bulletDist, targetDist);
+        if (!targetCrashed) {
+            dist = min(bulletDist, targetDist);
+        }
         
         if (dist < 0.0001) {
-            norm = normal(cameraToSphere, sphereSize);
-            float diff = dot(norm, lightDirection);
-            color = vec3(diff);
-            return true;
-//            if (dist == bulletDist) {
-//                norm = normal(cameraToSphere, sphereSize);
-//                float diff = dot(norm, lightDirection);
-//                color = vec3(diff);
-//                return true;
-//            } else {
-//                norm = normal(cameraToTarget, sphereSize);
-//                float diff = dot(norm, lightDirection);
-//                color = vec3(diff);
-//                return true;
-//            }
+//            norm = normal(cameraToSphere, sphereSize);
+//            float diff = dot(norm, lightDirection);
+//            color = vec3(diff);
+//            return true;
+            if (dist == bulletDist) {
+                norm = normal(cameraToSphere, sphereSize);
+                float diff = dot(norm, lightDirection);
+                color = vec3(diff);
+                return true;
+            } else {
+                norm = normal(cameraToTarget, sphereSize);
+                float diff = dot(norm, lightDirection);
+                color = vec3(diff);
+                return true;
+            }
         }
         cameraPosition += rayDirection * dist;
     }
