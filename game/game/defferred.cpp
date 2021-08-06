@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include "shader.h"
 #include "camera.h"
@@ -382,11 +384,13 @@ int main()
         // degree: pitch->Y, yaw->X
 //        std::cout << camera.GetYaw() << std::endl;
 //        std::cout << camera.GetPitch() << std::endl;
-        glm::mat4 rot = glm::rotate(
-                model,
-                glm::radians(camera.GetYaw()+90.0f),
-                glm::vec3(0.0f, -1.0f, 0.0f)
-                );
+        glm::quat quaternion(glm::vec3(0.0f, -glm::radians(camera.GetYaw()+90.0f), 0.0f));
+        glm::mat4 rot = glm::mat4_cast(quaternion)*model;
+//        glm::mat4 rot = glm::rotate(
+//                model,
+//                glm::radians(camera.GetYaw()+90.0f),
+//                glm::vec3(0.0f, -1.0f, 0.0f)
+//                );
 //        model = glm::rotate(
 //                 model,
 //                 camera.GetYaw(),
