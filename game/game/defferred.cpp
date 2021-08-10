@@ -115,6 +115,9 @@ int main()
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+//    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     
     // build and compile shaders
     // -------------------------
@@ -292,6 +295,7 @@ int main()
     shader.use();
     shader.setInt("skybox", 0);
     
+    glStencilMask(0x00);
     
     float target_position[] = {
         0.0f, 0.0f, 2.0f, 0.6f
@@ -307,6 +311,9 @@ int main()
     {
         // per-frame time logic
         // --------------------
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+        
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
@@ -329,7 +336,7 @@ int main()
         // render
         // ------
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         
 //        // draw scene as normal
 //        shader.use();
@@ -468,6 +475,9 @@ int main()
         glBindVertexArray(0);
         glDepthFunc(GL_LESS); // set depth function back to default
         
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        
 //        // 3. render lights on top of scene
 //        // --------------------------------
 //        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -504,6 +514,9 @@ int main()
 //        renderRaymarch();
 //        glBindVertexArray(VAO);
 //        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
